@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import threading
 import time
 
-from ovos_plugin_manager.templates.media import MediaBackend, RemoteAudioPlayerBackend, RemoteVideoPlayerBackend
-from ovos_utils.ocp import PlaybackType
+from ovos_bus_client.message import Message
+from ovos_plugin_manager.templates.media import MediaBackend, RemoteAudioPlayerBackend
+from ovos_utils import create_daemon
 
 from ovos_media_plugin_mass.music_assistant_client import SimpleHTTPMusicAssistantClient
 
@@ -90,23 +92,19 @@ class MAssBaseService(MediaBackend):
         else:
             self.player_id = self.config['identifier']
 
-        self.player_type = self.config.get("player_type", "unk")
-        self.tracker = PlaybackTimestampTracker()
-
-        self.meta = {"uri": None,
-                     "title": self.player_id,
-                     "thumbnail": "",  # TODO default icon
-                     "duration": 0,
-                     "playback": PlaybackType.AUDIO}
-        self.is_playing = False
-        self.ts = 0
-
         self.api = SimpleHTTPMusicAssistantClient(self.url)
+        self.tracker = PlaybackTimestampTracker()
+        self.is_playing = False
 
-        # TODO - check if player is available for MA in a timer
-        #  if not return empty supported uri list so this entry is skipped in selection
+        # player availability check
+        self.bus.on("ovos.mass.ping", self.handle_player_ping)
+        self.player_state = {"available": False}
+        self.handle_player_ping(Message("ovos.mass.ping"))
 
-        # TODO - track start/end callback support
+    def handle_player_ping(self, message):
+        self.player_state = self.api.get_player_state(self.player_id)
+        threading.Event().wait(20)
+        self.bus.emit(message)
 
     def load_track(self, uri, metadata: dict = None):
         track_info = self.api.track_info(uri)
@@ -126,8 +124,10 @@ class MAssBaseService(MediaBackend):
 
     def supported_uris(self):
         """ Return supported uris of mass. """
+        if not self.player_state["available"]:
+            return []
         uris = ["library"]
-        if self.player_type in []:  # TODO - which player types support http streams?
+        if self.player_state["player_type"] in []:  # TODO - which player types support http streams?
             uris += ["http", "https"]
         return uris
 
@@ -137,10 +137,23 @@ class MAssBaseService(MediaBackend):
 
     def play(self, repeat=False):
         """ Start playback."""
-        self.meta["uri"] = track = self._now_playing
         self.is_playing = True
-        self.api.play_media(self.active_queue["queue_id"], track)
+        self.api.play_media(self.active_queue["queue_id"], self._now_playing)
         self.tracker.start()
+
+        # track start/end callbacks
+        if self._track_start_callback:  # optimistic, we dont have a callback from MA
+            self._track_start_callback(self._now_playing)
+
+        if self.tracker.duration > 0 and self._track_start_callback:
+
+            def check_ended():
+                while self.is_playing:
+                    time.sleep(0.1)
+                    if self.tracker.current_timestamp >= self.tracker.duration:
+                        self._track_start_callback(None)
+
+            create_daemon(check_ended)
 
     def stop(self):
         """ Stop playback and quit app. """
@@ -175,7 +188,7 @@ class MAssBaseService(MediaBackend):
         """
         getting the duration of the audio in milliseconds
         """
-        return self.meta.get("duration", self.get_track_position()) * 1000
+        return (self.tracker.duration or self.tracker.current_timestamp) * 1000
 
     def get_track_position(self):
         """
@@ -199,4 +212,3 @@ class MAssBaseService(MediaBackend):
 class MAssOCPAudioService(RemoteAudioPlayerBackend, MAssBaseService):
     def __init__(self, config, bus=None):
         super().__init__(config, bus)
-

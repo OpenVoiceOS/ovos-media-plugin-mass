@@ -264,6 +264,8 @@ class SimpleHTTPMusicAssistantClient:
             "volume_muted": getattr(player, "volume_muted", False),
             "current_track": self._extract_current_track(player),
             "player_name": getattr(player, "name", "Unknown"),
+            "player_type": getattr(player, "provider", "Unknown"),
+            "available": getattr(player, "available", False),
         }
 
     @debug_method
@@ -305,3 +307,8 @@ class SimpleHTTPMusicAssistantClient:
 
         except Exception as e:
             self.log.exception(f"   🔍 {action} - Error getting state: {e}")
+
+if __name__== "__main__":
+    api = SimpleHTTPMusicAssistantClient("http://100.88.41.41:8095")
+    print(api.get_players())
+    print(api.get_player_state("ma_3sqpjlp25u"))
