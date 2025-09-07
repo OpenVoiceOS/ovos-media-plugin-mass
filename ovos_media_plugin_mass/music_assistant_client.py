@@ -90,7 +90,7 @@ class SimpleHTTPMusicAssistantClient:
         return [Player.from_dict(player_data) for player_data in result]
 
     def search_media(
-        self, query: str, media_types: Optional[List[MediaType]] = None, limit: int = 5
+        self, query: str, media_types: Optional[List[MediaType]] = None, limit: int = 20
     ) -> Dict[str, Any]:
         """Search for media."""
         args = {"search_query": query, "limit": limit}
@@ -102,6 +102,14 @@ class SimpleHTTPMusicAssistantClient:
         """Search for media."""
         args = {"uri": uri}
         return self.send_command("music/item_by_uri", **args)
+
+    def recommendations(self) -> Dict[str, Any]:
+        """Search for media."""
+        return self.send_command("music/recommendations")
+
+    def recently_played(self) -> Dict[str, Any]:
+        """Search for media."""
+        return self.send_command("music/recently_played_items")
 
 
     def play_media(
@@ -312,3 +320,7 @@ if __name__== "__main__":
     api = SimpleHTTPMusicAssistantClient("http://100.88.41.41:8095")
     print(api.get_players())
     print(api.get_player_state("ma_3sqpjlp25u"))
+
+    from pprint import pprint
+    res = api.recently_played()
+    pprint(res)
