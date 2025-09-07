@@ -2,6 +2,8 @@
 
 Music Assistant plugin for [ovos-audio](https://github.com/OpenVoiceOS/ovos-audio) and [ovos-media](https://github.com/OpenVoiceOS/ovos-media)
 
+For searching MA by voice you also need the companion [ovos-skill-music-assistant](https://github.com/HiveMindInsiders/ovos-skill-music-assistant)
+
 ## Install
 
 `pip install ovos-media-plugin-mass`
