@@ -1,6 +1,6 @@
 from pprint import pprint
 from ovos_utils import camel_case_split
-from ovos_media_plugin_mass.music_assistant_client import SimpleHTTPMusicAssistantClient
+from py_music_assistant import SimpleHTTPMusicAssistantClient
 from ovos_config.config import MycroftUserConfig
 
 

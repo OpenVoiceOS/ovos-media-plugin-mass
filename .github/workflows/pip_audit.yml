@@ -1,0 +1,12 @@
+name: Pip Audit
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  pip_audit:
+    uses: OpenVoiceOS/gh-automations/.github/workflows/pip-audit.yml@dev
+    with:
+      install_extras: "[test]"
+    secrets: inherit

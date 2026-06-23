@@ -22,8 +22,8 @@ class MAssAudioService(AudioBackend):
     def play(self, repeat=False):
         self.mass.play()
 
-    def stop(self):
-        self.mass.stop()
+    def stop(self) -> bool:
+        return self.mass.stop() or False
 
     def pause(self):
         self.mass.pause()
@@ -32,10 +32,10 @@ class MAssAudioService(AudioBackend):
         self.mass.resume()
 
     def next(self):
-        LOG.error("MAss does not support 'next'")
+        self.mass.next_track()
 
     def previous(self):
-        LOG.error("MAss does not support 'previous'")
+        self.mass.previous_track()
 
     def lower_volume(self):
         self.mass.lower_volume()
@@ -60,13 +60,34 @@ class MAssAudioService(AudioBackend):
         """
         return self.mass.get_track_position()
 
-    def set_track_position(self, milliseconds):
-        """
-        go to position in milliseconds
-          Args:
-                milliseconds (int): number of milliseconds of final position
+    def set_track_position(self, milliseconds: int) -> None:
+        """Seek to an absolute position in milliseconds.
+
+        Args:
+            milliseconds: Target position in milliseconds from the start of
+                the track.
         """
         self.mass.set_track_position(milliseconds)
+
+    def seek_forward(self, seconds: float) -> None:
+        """Seek forward by a relative number of seconds.
+
+        Delegates to :meth:`MAssBaseService.seek_forward`.
+
+        Args:
+            seconds: Number of seconds to seek forward.
+        """
+        self.mass.seek_forward(seconds)
+
+    def seek_backward(self, seconds: float) -> None:
+        """Seek backward by a relative number of seconds.
+
+        Delegates to :meth:`MAssBaseService.seek_backward`.
+
+        Args:
+            seconds: Number of seconds to seek backward.
+        """
+        self.mass.seek_backward(seconds)
 
 
 def load_service(base_config, bus):
