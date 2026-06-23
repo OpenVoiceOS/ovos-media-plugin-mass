@@ -8,7 +8,6 @@ jobs:
   coverage:
     uses: OpenVoiceOS/gh-automations/.github/workflows/coverage.yml@dev
     with:
-      pre_install_pip: "git+https://github.com/TigreGotico/mediavocab@feat/audit-2026-05-core git+https://github.com/OpenVoiceOS/ovos-plugin-manager@feat/media-provider-plugin-type git+https://github.com/TigreGotico/py-music-assistant@dev"
       test_extras: "test"
       test_path: "test/"
     secrets: inherit
