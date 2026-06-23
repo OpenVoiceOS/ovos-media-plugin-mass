@@ -27,7 +27,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-test = ["pytest", "pytest-cov", "ovoscope", "ovos-audio"]
+test = ["pytest", "pytest-cov", "ovoscope[audio]"]
 
 [project.urls]
 Homepage = "https://github.com/OpenVoiceOS/ovos-media-plugin-mass"
