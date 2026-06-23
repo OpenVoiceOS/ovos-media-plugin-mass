@@ -9,14 +9,12 @@ description = "Music Assistant playback backend for OVOS (ovos-media / ovos-audi
 readme = "README.md"
 license = { text = "Apache-2.0" }
 authors = [{name = "JarbasAi", email = "jarbasai@mailfence.com"}]
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 keywords = ["ovos", "OpenVoiceOS", "OCP", "media", "audio", "music-assistant", "plugin"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: Apache Software License",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
 ]
