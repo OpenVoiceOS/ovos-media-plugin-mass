@@ -26,9 +26,9 @@ dependencies = [
 
 [project.optional-dependencies]
 # ovoscope[audio] for the legacy AudioServiceHarness, [media] for OCPPlayerHarness
-# (the OCP-player e2e). >=0.21.0a1 has the backend_factory; CI installs it from git
-# until that alpha publishes to PyPI.
-test = ["pytest", "pytest-cov", "ovoscope[audio,media]>=0.21.0a1"]
+# (the OCP-player e2e). CI installs ovoscope from git until the new alpha publishes
+# to PyPI.
+test = ["pytest", "pytest-cov", "ovoscope[audio,media]>=0.20.0a1"]
 
 [project.urls]
 Homepage = "https://github.com/OpenVoiceOS/ovos-media-plugin-mass"
