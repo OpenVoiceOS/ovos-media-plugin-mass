@@ -8,6 +8,9 @@ jobs:
   build_tests:
     uses: OpenVoiceOS/gh-automations/.github/workflows/build-tests.yml@dev
     with:
+      # ovoscope's media harness (OCPPlayerHarness backend_factory) is on dev but
+      # not yet on PyPI (alpha publish is currently broken), so install from git.
+      pre_install_pip: "ovoscope[audio,media]@git+https://github.com/OpenVoiceOS/ovoscope@dev"
       python_versions: '["3.12", "3.13", "3.14"]'
       install_extras: "test"
       test_path: "test/"

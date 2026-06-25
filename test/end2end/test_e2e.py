@@ -34,9 +34,12 @@ from unittest.mock import MagicMock, patch
 from ovos_bus_client.message import Message
 from ovos_utils.fakebus import FakeBus
 
+from ovos_utils.ocp import MediaEntry, PlaybackType
+
 from ovos_media_plugin_mass.audio import MAssAudioService
 from ovos_media_plugin_mass.media import MAssOCPAudioService
 from ovoscope.audio import AudioCaptureSession, AudioServiceHarness
+from ovoscope.media import OCPPlayerHarness
 
 _PLAYER_ID: str = "test-mass-player"
 _TRACK_URI: str = "library://track/42"
@@ -208,6 +211,34 @@ class TestMAssOCPAudioService(unittest.TestCase):
             "mycroft.audio.service.play",
             "mycroft.audio.service.stop",
         )
+
+
+def _mass_backend_factory(bus: FakeBus) -> MAssOCPAudioService:
+    """Build a MAssOCPAudioService (client mocked) for OCPPlayerHarness injection."""
+    mock_client = _mock_mass_client()
+    patch1, patch2 = _patch_mass_init(mock_client)
+    with patch1, patch2:
+        backend = MAssOCPAudioService(_CONFIG, bus=bus)
+    backend.api = mock_client
+    backend.player_state = dict(_AVAILABLE)
+    backend.name = "mass-test"
+    return backend
+
+
+class TestMAssThroughOCPPlayer(unittest.TestCase):
+    """Drive MAssOCPAudioService through the real OCPMediaPlayer via ovoscope.
+
+    Unlike TestMAssOCPAudioService (which exercises the backend directly), this
+    injects the real backend into OCPPlayerHarness with a `backend_factory`, so the
+    player's full play -> load_track -> LOADED_MEDIA -> backend.play() path drives
+    the Music Assistant client end-to-end.
+    """
+
+    def test_player_play_invokes_client(self) -> None:
+        with OCPPlayerHarness(backend_factory=_mass_backend_factory) as h:
+            h.play(MediaEntry(uri=_TRACK_URI, playback=PlaybackType.AUDIO))
+            h.backend.api.track_info.assert_called_with(_TRACK_URI)
+            h.backend.api.play_media.assert_called_once_with(_QUEUE_ID, _TRACK_URI)
 
 
 if __name__ == "__main__":
