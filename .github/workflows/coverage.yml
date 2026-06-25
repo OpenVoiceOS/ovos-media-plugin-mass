@@ -8,9 +8,6 @@ jobs:
   coverage:
     uses: OpenVoiceOS/gh-automations/.github/workflows/coverage.yml@dev
     with:
-      # ovoscope's media harness (OCPPlayerHarness backend_factory) is on dev but
-      # not yet on PyPI (alpha publish is currently broken), so install from git.
-      pre_install_pip: "ovoscope[audio,media]@git+https://github.com/OpenVoiceOS/ovoscope@dev"
       python_version: "3.12"
       test_extras: "test"
       test_path: "test/"
