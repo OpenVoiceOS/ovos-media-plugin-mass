@@ -1,7 +1,7 @@
 from pprint import pprint
 from ovos_utils import camel_case_split
 from py_music_assistant import SimpleHTTPMusicAssistantClient
-from ovos_config.config import MycroftUserConfig
+from ovos_config.config import UserConfig
 
 
 def main():
@@ -21,7 +21,7 @@ def main():
     for player in players:
         print(f"    - Found player: {player.name} - {player.provider}:{player.player_id}")
 
-    cfg = MycroftUserConfig()
+    cfg = UserConfig()
 
     if len(players) == 1:
         default = 0
