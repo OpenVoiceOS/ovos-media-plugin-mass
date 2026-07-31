@@ -40,6 +40,6 @@ ovos-mass-autoconfigure        # scans your server and writes mycroft.conf
 
 See:
 
-- [architecture.md](architecture.md) — the class layers and playback flow
-- [configuration.md](configuration.md) — config keys for both stacks
-- [faq.md](faq.md) — common questions
+- [architecture.md](architecture.md): the class layers and playback flow
+- [configuration.md](configuration.md): config keys for both stacks
+- [faq.md](faq.md): common questions

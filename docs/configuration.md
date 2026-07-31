@@ -58,3 +58,6 @@ This plugin only plays uris. Catalog/search is provided by
 [`ovos-media-provider-mass`](https://github.com/OpenVoiceOS/ovos-media-provider-mass)
 on the `ovos-media` stack (configured under `media_providers.music_assistant`
 with the same `url`), or by `ovos-skill-music-assistant` on the legacy stack.
+
+---
+[← Architecture](architecture.md) · [Home](index.md) · [FAQ →](faq.md)
