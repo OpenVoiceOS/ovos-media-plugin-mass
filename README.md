@@ -4,8 +4,8 @@ Music Assistant **playback backend** for OVOS. It controls
 [Music Assistant](https://www.music-assistant.io/) players, playing the
 `library://<type>/<id>` uris that the Music Assistant catalog returns.
 
-It ships **one backend on both media stacks** — the same plugin works whether you
-run the legacy `ovos-audio` service or the modern `ovos-media` service:
+It ships **one backend on both media stacks**: the same plugin works with the
+legacy `ovos-audio` service and with the modern `ovos-media` service.
 
 | Stack | Entry-point group | Class |
 |---|---|---|
@@ -63,17 +63,17 @@ See [docs/configuration.md](docs/configuration.md) for the field reference.
 
 ## Related projects
 
-- [py-music-assistant](https://github.com/TigreGotico/py-music-assistant) — shared HTTP client + mediavocab bridge (this plugin's transport layer)
-- [ovos-media-provider-mass](https://github.com/OpenVoiceOS/ovos-media-provider-mass) — Music Assistant MediaProvider (search, `ovos-media` stack)
-- [ovos-skill-music-assistant](https://github.com/OpenVoiceOS/ovos-skill-music-assistant) — Music Assistant OCP search skill (legacy stack)
-- [hivemind-homeassistant](https://github.com/JarbasHiveMind/hivemind-homeassistant) — expose OVOS as a player in Home Assistant
+- [py-music-assistant](https://github.com/TigreGotico/py-music-assistant): the shared HTTP client and mediavocab bridge (this plugin's transport layer)
+- [ovos-media-provider-mass](https://github.com/OpenVoiceOS/ovos-media-provider-mass): the Music Assistant MediaProvider (search, `ovos-media` stack)
+- [ovos-skill-music-assistant](https://github.com/OpenVoiceOS/ovos-skill-music-assistant): the Music Assistant OCP search skill (legacy stack)
+- [hivemind-homeassistant](https://github.com/JarbasHiveMind/hivemind-homeassistant): exposes OVOS as a player in Home Assistant
 
 ## Docs
 
-- [docs/index.md](docs/index.md) — overview & how the two stacks fit together
-- [docs/architecture.md](docs/architecture.md) — backends, uri resolution, playback flow
-- [docs/configuration.md](docs/configuration.md) — configuration reference
-- [docs/faq.md](docs/faq.md) — troubleshooting
+- [docs/index.md](docs/index.md): overview and how the two stacks fit together
+- [docs/architecture.md](docs/architecture.md): backends, uri resolution, playback flow
+- [docs/configuration.md](docs/configuration.md): configuration reference
+- [docs/faq.md](docs/faq.md): troubleshooting
 
 ## Tests
 

@@ -8,7 +8,7 @@ The plugin is layered so a single implementation serves both the modern
 | OCP backend | `MAssOCPAudioService` | `RemoteAudioPlayerBackend` + `MAssBaseService` | `opm.media.audio` entry point for `ovos-media` |
 | Legacy backend | `MAssAudioService` | `AudioBackend` | `mycroft.plugin.audioservice` wrapper that delegates to an inner `MAssOCPAudioService` |
 | Core | `MAssBaseService` | `MediaBackend` | all playback logic (load/play/stop/pause/seek/volume/queue) |
-| Timing | `PlaybackTimestampTracker` | — | local soft-clock estimating track position without polling the server |
+| Timing | `PlaybackTimestampTracker` | n/a | local soft-clock estimating track position without polling the server |
 
 `MAssBaseService` holds a `SimpleHTTPMusicAssistantClient` (from
 `py-music-assistant`) as `self.api` and a player `identifier` from config.
@@ -36,3 +36,6 @@ milliseconds. Position is therefore an estimate, not a server-reported value.
 `supported_uris()` returns `["library"]` when the player reports available.
 `force_enable_http` / `force_enable_spotify` config flags add `http`/`https` and
 `spotify` schemes for servers/players that can play them directly.
+
+---
+[Home](index.md) · [Configuration →](configuration.md)

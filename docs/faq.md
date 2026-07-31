@@ -12,7 +12,7 @@ API.
 available. `force_enable_http` and `force_enable_spotify` config flags add
 `http`/`https` and `spotify` schemes for players that can handle them directly.
 
-## `supported_uris()` returns an empty list — why?
+## `supported_uris()` returns an empty list. Why?
 
 The player reports as unavailable: the server did not return a healthy state for
 the configured `identifier`. Check that the server is running and that `url` and
@@ -25,7 +25,7 @@ since this HTTP API does not push live position. Position is therefore an estima
 
 ## Can it skip tracks?
 
-Yes — `next_track()` / `previous_track()` (and the legacy `next()` / `previous()`)
+Yes. `next_track()` / `previous_track()` (and the legacy `next()` / `previous()`)
 issue Music Assistant queue commands.
 
 ## How do I configure multiple players?
@@ -38,3 +38,6 @@ Music Assistant `player_id`. See [configuration.md](configuration.md).
 The metadata captured during the last `load_track()`: keys may include `name`,
 `artist`, `album`, `duration`, `uri`, `track_number`, `disc_number` and
 `external_ids`. It returns `{}` before any track is loaded.
+
+---
+[← Configuration](configuration.md) · [Home](index.md)
