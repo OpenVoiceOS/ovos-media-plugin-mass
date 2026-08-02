@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.2a2](https://github.com/OpenVoiceOS/ovos-media-plugin-mass/tree/0.0.2a2) (2026-08-02)
+
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-media-plugin-mass/compare/0.0.2a1...0.0.2a2)
+
+**Merged pull requests:**
+
+- refactor: use the current ovos-config class names [\#3](https://github.com/OpenVoiceOS/ovos-media-plugin-mass/pull/3) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.0.2a1](https://github.com/OpenVoiceOS/ovos-media-plugin-mass/tree/0.0.2a1) (2026-07-31)
 
 [Full Changelog](https://github.com/OpenVoiceOS/ovos-media-plugin-mass/compare/9c5a3c6d24115b59f40ad5e0149de1a2bd7fecd4...0.0.2a1)
