@@ -12,5 +12,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from ovos_media_plugin_mass.media import MAssOCPAudioService
-from ovos_media_plugin_mass.audio import MAssAudioService
+from ovos_media_plugin_mass.media import MAssOCPAudioService as MAssOCPAudioService
+from ovos_media_plugin_mass.audio import MAssAudioService as MAssAudioService

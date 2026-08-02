@@ -31,7 +31,6 @@ import time
 import unittest
 from unittest.mock import MagicMock, patch
 
-from ovos_bus_client.message import Message
 from ovos_utils.fakebus import FakeBus
 
 from ovos_utils.ocp import MediaEntry, PlaybackType
