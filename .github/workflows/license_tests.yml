@@ -11,4 +11,13 @@ on:
 jobs:
   license_tests:
     uses: OpenVoiceOS/gh-automations/.github/workflows/license-check.yml@dev
+    with:
+      # orjson: dual/mixed-licensed MPL-2.0 AND (Apache-2.0 OR MIT). Verified against
+      # the wheel's actual METADATA (orjson-3.11.9): License-Expression is
+      # "MPL-2.0 AND (Apache-2.0 OR MIT)" (PEP 639), which pilosus classifies as
+      # WeakCopyleft and the reusable workflow's default exclude_licenses regex
+      # (^Mozilla Public License.*, aimed at the old classifier text) doesn't match.
+      # Policy already allows MPL as a library dependency (file-level copyleft, not
+      # modifying MPL files) — this only fixes the PEP 639 metadata-format mismatch.
+      exclude_packages: '^orjson([=<>!~ @;].*)?$'
     secrets: inherit
