@@ -10,7 +10,7 @@ jobs:
     uses: OpenVoiceOS/gh-automations/.github/workflows/opm-check.yml@dev
     secrets: inherit
     with:
-      python_version: '3.11'
+      python_version: '3.12'
       plugin_type: 'auto'
       entry_point: 'ovos-media-audio-plugin-mass'
       opm_require_found: true
