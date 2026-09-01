@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.2a6](https://github.com/OpenVoiceOS/ovos-media-plugin-mass/tree/0.0.2a6) (2026-09-01)
+
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-media-plugin-mass/compare/0.0.2a5...0.0.2a6)
+
+**Merged pull requests:**
+
+- ci: pass PYPI\_TOKEN to the release workflow explicitly [\#7](https://github.com/OpenVoiceOS/ovos-media-plugin-mass/pull/7) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.0.2a5](https://github.com/OpenVoiceOS/ovos-media-plugin-mass/tree/0.0.2a5) (2026-09-01)
 
 [Full Changelog](https://github.com/OpenVoiceOS/ovos-media-plugin-mass/compare/0.0.2a4...0.0.2a5)
