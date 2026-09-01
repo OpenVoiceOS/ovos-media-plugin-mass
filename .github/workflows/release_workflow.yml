@@ -6,6 +6,12 @@ on:
     types: [closed]
     branches: [dev]
 
+permissions:
+  contents: write
+  pull-requests: write
+  issues: read
+  id-token: write
+
 jobs:
   publish_alpha:
     if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
