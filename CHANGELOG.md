@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.0.2a5](https://github.com/OpenVoiceOS/ovos-media-plugin-mass/tree/0.0.2a5) (2026-09-01)
+
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-media-plugin-mass/compare/0.0.2a4...0.0.2a5)
+
+**Merged pull requests:**
+
+- Grant release workflow the permissions trusted publishing needs [\#6](https://github.com/OpenVoiceOS/ovos-media-plugin-mass/pull/6) ([JarbasAl](https://github.com/JarbasAl))
+
+## [0.0.2a4](https://github.com/OpenVoiceOS/ovos-media-plugin-mass/tree/0.0.2a4) (2026-09-01)
+
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-media-plugin-mass/compare/0.0.2a3...0.0.2a4)
+
 ## [0.0.2a3](https://github.com/OpenVoiceOS/ovos-media-plugin-mass/tree/0.0.2a3) (2026-08-02)
 
 [Full Changelog](https://github.com/OpenVoiceOS/ovos-media-plugin-mass/compare/0.0.2a2...0.0.2a3)
