@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.1a1](https://github.com/OpenVoiceOS/ovos-media-plugin-mass/tree/0.1.1a1) (2026-09-02)
+
+[Full Changelog](https://github.com/OpenVoiceOS/ovos-media-plugin-mass/compare/0.1.0a1...0.1.1a1)
+
+**Merged pull requests:**
+
+- fix: report natural track end and honour the stop contract [\#10](https://github.com/OpenVoiceOS/ovos-media-plugin-mass/pull/10) ([JarbasAl](https://github.com/JarbasAl))
+
 ## [0.1.0a1](https://github.com/OpenVoiceOS/ovos-media-plugin-mass/tree/0.1.0a1) (2026-09-02)
 
 [Full Changelog](https://github.com/OpenVoiceOS/ovos-media-plugin-mass/compare/0.0.3a1...0.1.0a1)
