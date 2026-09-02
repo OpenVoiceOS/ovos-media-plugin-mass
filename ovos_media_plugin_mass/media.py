@@ -199,10 +199,10 @@ class MAssBaseService(MediaBackend):
         if self._track_start_callback:  # optimistic, we dont have a callback from MA
             self._track_start_callback(self._now_playing)
 
-        if self.tracker.duration > 0 and self._track_start_callback:
+        if self.tracker.duration > 0:
 
             def check_ended() -> None:
-                """Daemon that fires the track-end callback once duration is reached.
+                """Daemon that reports natural end-of-media once duration is reached.
 
                 Guards against firing after an explicit ``stop()`` call by
                 checking ``self.is_playing`` before invoking the callback.
@@ -210,10 +210,34 @@ class MAssBaseService(MediaBackend):
                 while self.is_playing:
                     time.sleep(0.1)
                     if self.is_playing and self.tracker.current_timestamp >= self.tracker.duration:
-                        self._track_start_callback(None)
+                        if self._track_start_callback:
+                            self._track_start_callback(None)
+                        # natural end-of-media (duration reached, no stop()
+                        # requested by us) - ocp_stop() is idempotent
+                        # (no-ops once self._now_playing is None), so it is
+                        # safe to call here even if a stop() races us
+                        self.ocp_stop()
                         break
 
             create_daemon(check_ended)
+        else:
+            # duration unknown (e.g. a live/radio stream, or the MAss API
+            # didn't report one) - the timestamp-based check above can never
+            # fire, so we would never detect a natural end. Fall back to
+            # polling the player's reported state (refreshed by the ping
+            # loop into self.player_state at player_ping_interval) and treat
+            # idle/stopped - after we know playback actually started - as a
+            # natural end.
+            def watch_player_state() -> None:
+                while self.is_playing:
+                    time.sleep(self._ping_interval)
+                    if self.is_playing and (self.player_state or {}).get("state") in ("idle", "stopped"):
+                        if self._track_start_callback:
+                            self._track_start_callback(None)
+                        self.ocp_stop()
+                        break
+
+            create_daemon(watch_player_state)
 
     def stop(self):
         """ Stop playback and quit app. """
