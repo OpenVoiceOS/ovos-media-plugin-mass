@@ -100,7 +100,7 @@ class MAssBaseService(MediaBackend):
         else:
             self.player_id = self.config['identifier']
 
-        self.api = SimpleHTTPMusicAssistantClient(self.url)
+        self.api = SimpleHTTPMusicAssistantClient(self.url, token=self.config.get("token"))
         self.tracker = PlaybackTimestampTracker()
         self.is_playing = False
         self.meta: dict = {}

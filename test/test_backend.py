@@ -42,6 +42,27 @@ class TestMAssBaseServiceInit(unittest.TestCase):
         self.assertEqual(svc.url, "http://localhost:8095")
         self.assertEqual(svc.player_id, "uuid:test-player-123")
 
+    def test_token_reaches_client_constructor(self):
+        from ovos_media_plugin_mass.media import MAssBaseService
+        cfg = _make_config()
+        cfg["token"] = "sekrit-token"
+        bus = FakeBus()
+        with patch.object(MAssBaseService, "refresh_player_state"), \
+             patch.object(MAssBaseService, "_start_ping_loop"), \
+             patch("ovos_media_plugin_mass.media.SimpleHTTPMusicAssistantClient") as mock_client:
+            MAssBaseService(cfg, bus=bus)
+        mock_client.assert_called_once_with("http://localhost:8095", token="sekrit-token")
+
+    def test_no_token_passes_none_to_client_constructor(self):
+        from ovos_media_plugin_mass.media import MAssBaseService
+        cfg = _make_config()
+        bus = FakeBus()
+        with patch.object(MAssBaseService, "refresh_player_state"), \
+             patch.object(MAssBaseService, "_start_ping_loop"), \
+             patch("ovos_media_plugin_mass.media.SimpleHTTPMusicAssistantClient") as mock_client:
+            MAssBaseService(cfg, bus=bus)
+        mock_client.assert_called_once_with("http://localhost:8095", token=None)
+
 
 class TestMAssBaseServiceSupportedUris(unittest.TestCase):
 
