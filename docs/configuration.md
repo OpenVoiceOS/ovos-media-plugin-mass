@@ -6,6 +6,7 @@ server and writes one backend entry per player. The keys it sets:
 | Key | Required | Meaning |
 |---|---|---|
 | `url` | yes | Music Assistant server base URL, e.g. `http://192.168.1.100:8095` |
+| `token` | no | Music Assistant API token; required by MA 2.11+, create one in the MA web UI under Settings → Users. Also settable via the `MASS_TOKEN` environment variable |
 | `identifier` | yes | the Music Assistant `player_id` to control |
 | `player_type` | no | player provider hint (e.g. `dlna`, `cast`) |
 | `aliases` | no | spoken names that map to this player |
