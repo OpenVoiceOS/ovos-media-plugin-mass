@@ -36,7 +36,8 @@ class TestMAssBaseServiceInit(unittest.TestCase):
         from ovos_media_plugin_mass.media import MAssBaseService
         cfg = _make_config()
         bus = FakeBus()
-        with patch.object(MAssBaseService, "handle_player_ping"):
+        with patch.object(MAssBaseService, "refresh_player_state"), \
+             patch.object(MAssBaseService, "_start_ping_loop"):
             svc = MAssBaseService(cfg, bus=bus)
         self.assertEqual(svc.url, "http://localhost:8095")
         self.assertEqual(svc.player_id, "uuid:test-player-123")
@@ -51,7 +52,8 @@ class TestMAssBaseServiceSupportedUris(unittest.TestCase):
         cfg["force_enable_http"] = force_http
         cfg["force_enable_spotify"] = force_spotify
         bus = FakeBus()
-        with patch.object(MAssBaseService, "handle_player_ping"):
+        with patch.object(MAssBaseService, "refresh_player_state"), \
+             patch.object(MAssBaseService, "_start_ping_loop"):
             svc = MAssBaseService(cfg, bus=bus)
         svc.player_state = {"available": available, "player_type": player_type}
         return svc
@@ -93,7 +95,8 @@ class TestMAssBaseServicePlaybackDelegation(unittest.TestCase):
         from ovos_media_plugin_mass.media import MAssBaseService
         cfg = _make_config()
         bus = FakeBus()
-        with patch.object(MAssBaseService, "handle_player_ping"):
+        with patch.object(MAssBaseService, "refresh_player_state"), \
+             patch.object(MAssBaseService, "_start_ping_loop"):
             svc = MAssBaseService(cfg, bus=bus)
         svc.player_state = {"available": True, "player_type": "dlna"}
         svc.api = MagicMock()

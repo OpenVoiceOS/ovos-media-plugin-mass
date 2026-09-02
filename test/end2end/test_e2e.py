@@ -22,8 +22,8 @@ Mocking strategy
 ----------------
 - ``SimpleHTTPMusicAssistantClient`` is replaced with a MagicMock so no real HTTP
   calls are made to a Music Assistant server.
-- ``handle_player_ping`` is patched to a no-op on instantiation so the
-  constructor does not spawn a background networking daemon during tests.
+- ``_start_ping_loop`` is patched to a no-op on instantiation so the
+  constructor does not spawn a background poll daemon during tests.
 - ``player_state`` is then set to ``available=True`` so ``supported_uris()``
   advertises ``library`` and the AudioService can route the test track.
 """
@@ -70,8 +70,8 @@ def _mock_mass_client() -> MagicMock:
 def _patch_mass_init(mock_client: MagicMock):
     """Return the context managers needed to safely construct a MAss backend.
 
-    Patches out both SimpleHTTPMusicAssistantClient and the player-ping method
-    (which would otherwise spawn a networking daemon thread).
+    Patches out both SimpleHTTPMusicAssistantClient and the ping-loop starter
+    (which would otherwise spawn a background poll daemon thread).
     """
     return (
         patch(
@@ -80,8 +80,8 @@ def _patch_mass_init(mock_client: MagicMock):
         ),
         patch.object(
             MAssOCPAudioService,
-            "handle_player_ping",
-            lambda self, msg: None,  # no-op: avoid spawning a network daemon
+            "_start_ping_loop",
+            lambda self: None,  # no-op: avoid spawning a poll daemon
         ),
     )
 
