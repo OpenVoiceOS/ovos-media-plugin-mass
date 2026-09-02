@@ -42,6 +42,36 @@ Scanning...
 mycroft.conf updated!
 ```
 
+When more than one player is found, it lists them and prompts for the
+default (the only player written to the legacy `Audio` backends and marked
+`active: true` on the `ovos-media` side — every other discovered player is
+written with `active: false`):
+
+```bash
+$ ovos-mass-autoconfigure
+This script will auto configure Music Assistant devices under your mycroft.conf
+Make sure your Music Assistant server is accessible from this device
+Please enter your Music Assistant server url: http://192.168.1.100:8095
+
+Scanning...
+    - Found player: HomeLabRenderer - dlna:uuid:4b778a71-0499-485a-a5a4-88140603fba9
+    - Found player: KitchenSpeaker - dlna:uuid:9a11a2f0-0a3b-4e3d-9a0e-2a5b6c7d8e9f
+0 - HomeLabRenderer:dlna:uuid:4b778a71-0499-485a-a5a4-88140603fba9
+1 - KitchenSpeaker:dlna:uuid:9a11a2f0-0a3b-4e3d-9a0e-2a5b6c7d8e9f
+select default mass device: 0
+
+mycroft.conf updated!
+```
+
+Run non-interactively (CI, provisioning scripts) with `--url` and
+`--default`/`--player` (index or `player_id`); without them, and with
+multiple players found on a non-tty stdin, the script exits with an error
+instead of hanging on `input()`:
+
+```bash
+$ ovos-mass-autoconfigure --url http://192.168.1.100:8095 --default 0
+```
+
 It emits configuration for both stacks:
 
 ```jsonc

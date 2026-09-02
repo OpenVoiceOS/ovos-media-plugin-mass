@@ -12,13 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import threading
 import time
 
-from ovos_bus_client.message import Message
 from ovos_plugin_manager.templates.media import MediaBackend, RemoteAudioPlayerBackend
 from ovos_utils import create_daemon
+from ovos_utils.log import LOG
 
 from py_music_assistant import SimpleHTTPMusicAssistantClient
+
+# config key controlling how often the player state is polled, in seconds
+PLAYER_PING_INTERVAL_CONF_KEY = "player_ping_interval"
+DEFAULT_PLAYER_PING_INTERVAL = 5
 
 
 class PlaybackTimestampTracker:
@@ -101,21 +106,42 @@ class MAssBaseService(MediaBackend):
         self.meta: dict = {}
 
         # player availability check
-        self.bus.on("ovos.mass.ping", self.handle_player_ping)
         self.player_state = {"available": False}
-        self.handle_player_ping(Message("ovos.mass.ping"))
+        self._ping_interval = self.config.get(PLAYER_PING_INTERVAL_CONF_KEY,
+                                                DEFAULT_PLAYER_PING_INTERVAL)
+        self._ping_stop_event = threading.Event()
+        self._ping_thread = None
+        self.refresh_player_state()
+        self._start_ping_loop()
 
-    def handle_player_ping(self, message: Message) -> None:
-        """Refresh player state and re-emit the ping message without blocking the bus thread.
+    def refresh_player_state(self) -> None:
+        """Fetch the current player state from the MAss API.
 
-        The state fetch and re-emit are offloaded to a daemon thread so the
-        bus event loop is never blocked.
+        A player that is no longer reachable/known to the server is
+        reported as unavailable instead of leaving ``player_state`` as
+        ``None``.
         """
-        def _check() -> None:
-            self.player_state = self.api.get_player_state(self.player_id)
-            self.bus.emit(message)
+        state = self.api.get_player_state(self.player_id)
+        self.player_state = state if state is not None else {"available": False}
 
-        create_daemon(_check)
+    def _start_ping_loop(self) -> None:
+        """Start the background thread that periodically refreshes player state.
+
+        Uses ``Event.wait`` (not bus self-emission) so the poll interval is
+        configurable via ``player_ping_interval`` (seconds, default 5) and
+        stops promptly when ``shutdown()`` sets the stop event.
+        """
+        if self._ping_thread is not None:
+            return
+
+        def _loop() -> None:
+            while not self._ping_stop_event.wait(self._ping_interval):
+                try:
+                    self.refresh_player_state()
+                except Exception as e:
+                    LOG.warning(f"failed to refresh MAss player state: {e}")
+
+        self._ping_thread = create_daemon(_loop)
 
     def load_track(self, uri: str, metadata: dict | None = None) -> None:
         """Load a track URI and populate metadata from the MAss API.
@@ -148,7 +174,7 @@ class MAssBaseService(MediaBackend):
 
     def supported_uris(self):
         """ Return supported uris of mass. """
-        if not self.player_state["available"]:
+        if not (self.player_state or {}).get("available"):
             return []
         uris = ["library"]
         if self.config.get("force_enable_http") or self.player_state["player_type"] in []:  # TODO - which player types support http streams?
@@ -225,7 +251,11 @@ class MAssBaseService(MediaBackend):
         self.api.player_command_volume_up(self.player_id)
 
     def shutdown(self):
-        """ Disconnect from the device. """
+        """ Disconnect from the device and stop the player-state poll thread. """
+        self._ping_stop_event.set()
+        if self._ping_thread is not None:
+            self._ping_thread.join(timeout=self._ping_interval + 1)
+            self._ping_thread = None
         self.stop()
 
     def get_track_length(self):

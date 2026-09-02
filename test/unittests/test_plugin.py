@@ -39,7 +39,7 @@ def _make_ocp_service() -> "MAssOCPAudioService":  # noqa: F821
     """Return a MAssOCPAudioService with the HTTP client mocked."""
     from ovos_media_plugin_mass.media import MAssOCPAudioService
     with patch("ovos_media_plugin_mass.media.SimpleHTTPMusicAssistantClient") as MockClient, \
-            patch.object(MAssOCPAudioService, "handle_player_ping", lambda self, msg: None):
+            patch.object(MAssOCPAudioService, "_start_ping_loop", lambda self: None):
         client = MockClient.return_value
         client.get_player_state.return_value = {"available": True, "player_type": "generic"}
         client.get_active_queue.return_value = {"queue_id": "q1"}
@@ -53,7 +53,7 @@ def _make_legacy_service() -> "MAssAudioService":  # noqa: F821
     from ovos_media_plugin_mass.media import MAssOCPAudioService
     from ovos_media_plugin_mass.audio import MAssAudioService
     with patch("ovos_media_plugin_mass.media.SimpleHTTPMusicAssistantClient") as MockClient, \
-            patch.object(MAssOCPAudioService, "handle_player_ping", lambda self, msg: None):
+            patch.object(MAssOCPAudioService, "_start_ping_loop", lambda self: None):
         client = MockClient.return_value
         client.get_player_state.return_value = {"available": True, "player_type": "generic"}
         client.get_active_queue.return_value = {"queue_id": "q1"}

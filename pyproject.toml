@@ -38,7 +38,7 @@ Repository = "https://github.com/OpenVoiceOS/ovos-media-plugin-mass"
 ovos-mass-autoconfigure = "ovos_media_plugin_mass.autoconfigure:main"
 
 [project.entry-points."mycroft.plugin.audioservice"]
-ovos_mass = "ovos_media_plugin_mass.audio:MAssAudioService"
+ovos_mass = "ovos_media_plugin_mass.audio"
 
 [project.entry-points."opm.media.audio"]
 ovos-media-audio-plugin-mass = "ovos_media_plugin_mass.media:MAssOCPAudioService"
