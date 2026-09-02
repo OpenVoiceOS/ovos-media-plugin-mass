@@ -38,6 +38,9 @@ def _select_default(players, default_arg):
 def main():
     parser = ArgumentParser(description="Auto configure Music Assistant devices under mycroft.conf")
     parser.add_argument("--url", help="Music Assistant server url")
+    parser.add_argument("--token", help="Music Assistant API token "
+                                         "(required by MA 2.11+; create one in the "
+                                         "MA web UI under settings/users)")
     parser.add_argument("--default", "--player", dest="default",
                          help="index or player_id of the default player "
                               "(required for non-interactive use when multiple players are found)")
@@ -47,8 +50,13 @@ def main():
         """This script will auto configure Music Assistant devices under your mycroft.conf\nMake sure your Music Assistant server is accessible from this device""")
 
     url = args.url or input("Please enter your Music Assistant server url: ")
+    token = args.token
+    if token is None and sys.stdin.isatty():
+        token = input(
+            "Please enter your Music Assistant API token (leave blank if "
+            "your server has no auth enabled): ") or None
 
-    api = SimpleHTTPMusicAssistantClient(url)
+    api = SimpleHTTPMusicAssistantClient(url, token=token)
     print("\nScanning...")
     players = [player for player in api.get_players() if player.provider != "builtin_player"]
 
@@ -82,6 +90,7 @@ def main():
                 "type": "ovos_mass",
                 "identifier": d,
                 "url": url,
+                "token": token,
                 "player_type": player.provider,
                 "active": True
             }
@@ -90,6 +99,7 @@ def main():
             "module": "ovos-media-audio-plugin-mass",
             "identifier": d,
             "url": url,
+            "token": token,
             "player_type": player.provider,
             "aliases": [player.name, camel_case_split(player.name)],
             "active": is_default
