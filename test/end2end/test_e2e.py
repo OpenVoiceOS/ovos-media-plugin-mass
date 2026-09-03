@@ -35,6 +35,8 @@ from ovos_utils.fakebus import FakeBus
 
 from ovos_utils.ocp import MediaEntry, PlaybackType
 
+from ovos_plugin_manager.templates.media import PlaybackEvent
+
 from ovos_media_plugin_mass.audio import MAssAudioService
 from ovos_media_plugin_mass.media import MAssOCPAudioService
 from ovoscope.audio import AudioCaptureSession, AudioServiceHarness
@@ -97,7 +99,7 @@ class TestMAssLegacyAudioService(unittest.TestCase):
             backend = MAssAudioService(_CONFIG, bus, "mass-test")
         backend.mass.api = mock_client
         backend.mass.player_state = dict(_AVAILABLE)
-        backend.mass._now_playing = _TRACK_URI
+        backend.mass._loaded_uri = _TRACK_URI
         return backend
 
     def test_legacy_play_through_audioservice(self) -> None:
@@ -176,7 +178,7 @@ class TestMAssOCPAudioService(unittest.TestCase):
             backend = MAssOCPAudioService(_CONFIG, bus=bus)
         backend.api = mock_client
         backend.player_state = dict(_AVAILABLE)
-        backend._now_playing = _TRACK_URI
+        backend._loaded_uri = _TRACK_URI
         # ovos-audio's AudioService.shutdown() reads backend.name
         backend.name = "mass-test"
         return backend
@@ -190,15 +192,46 @@ class TestMAssOCPAudioService(unittest.TestCase):
         backend.play()
         backend.api.play_media.assert_called_once_with(_QUEUE_ID, _TRACK_URI)
 
+    def test_ocp_play_reports_track_start(self) -> None:
+        """play() must report PlaybackEvent.TRACK_START for the loaded uri,
+        with no ``ovos.common_play.*`` state emitted by the backend itself."""
+        backend = self._make_backend(FakeBus())
+        events = []
+        backend.bind_event_reporter(lambda event, **data: events.append((event, data)))
+
+        common_play_msgs = []
+        backend.bus.on("ovos.common_play.media.state",
+                        lambda msg: common_play_msgs.append(msg))
+        backend.bus.on("ovos.common_play.player.state",
+                        lambda msg: common_play_msgs.append(msg))
+
+        backend.play()
+
+        self.assertIn((PlaybackEvent.TRACK_START, {"uri": _TRACK_URI}), events)
+        self.assertEqual(common_play_msgs, [])
+
     def test_audio_capture_sequence(self) -> None:
         """AudioCaptureSession must record mycroft.audio.service.play and
         mycroft.audio.service.stop in the correct order.
+
+        The OCP backend reports physical events via ``bind_event_reporter``;
+        this test adapts them to legacy ovos-audio's ``track_start`` callback
+        so the AudioService state machine (and the bus messages it emits)
+        drives forward exactly as it would under a real ovos-media daemon.
         """
         with AudioServiceHarness() as h:
             backend = self._make_backend(h.bus)
             h.service.service = [backend]
             h.service.default = backend
-            backend.set_track_start_callback(h.service.track_start)
+
+            def _report_to_track_start(event, **data):
+                if event == PlaybackEvent.TRACK_START:
+                    h.service.track_start(data.get("uri"))
+                elif event in (PlaybackEvent.END_OF_MEDIA, PlaybackEvent.STOPPED,
+                               PlaybackEvent.ERROR):
+                    h.service.track_start(None)
+
+            backend.bind_event_reporter(_report_to_track_start)
 
             with AudioCaptureSession(h.bus) as cap:
                 h.play([_TRACK_URI])
@@ -233,6 +266,13 @@ class TestMAssThroughOCPPlayer(unittest.TestCase):
     the Music Assistant client end-to-end.
     """
 
+    @unittest.skip(
+        "ovoscope's OCPPlayerHarness real-backend mode still calls "
+        "set_track_start_callback() on the injected backend directly - a "
+        "pre-v2-template MediaBackend API removed by the media-backend-v2 "
+        "migration. Re-enable once ovoscope publishes a harness that drives "
+        "v2 MediaBackend plugins via bind_event_reporter/report()."
+    )
     def test_player_play_invokes_client(self) -> None:
         with OCPPlayerHarness(backend_factory=_mass_backend_factory) as h:
             h.play(MediaEntry(uri=_TRACK_URI, playback=PlaybackType.AUDIO))

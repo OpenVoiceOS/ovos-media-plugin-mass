@@ -11,4 +11,6 @@ jobs:
       python_version: "3.12"
       test_extras: "test"
       test_path: "test/"
+      # TEMPORARY until ovos-plugin-manager 3.0.0a1 releases
+      pre_install_pip: "git+https://github.com/OpenVoiceOS/ovos-plugin-manager@feat/media-backend-v2"
     secrets: inherit
