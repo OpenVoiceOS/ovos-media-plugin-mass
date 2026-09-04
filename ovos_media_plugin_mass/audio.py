@@ -1,4 +1,5 @@
 from ovos_plugin_manager.templates.audio import AudioBackend
+from ovos_plugin_manager.templates.media import PlaybackEvent
 from ovos_utils.log import LOG
 
 from ovos_media_plugin_mass.media import MAssOCPAudioService
@@ -12,9 +13,21 @@ class MAssAudioService(AudioBackend):
     def __init__(self, config, bus, name='mass'):
         super().__init__(config, bus, name)
         self.mass = MAssOCPAudioService(self.config, bus=self.bus)
+        self._track_start_callback = None
+        self.mass.bind_event_reporter(self._on_mass_event)
+
+    def _on_mass_event(self, event, **data):
+        """Adapt the inner MediaBackend's physical events to ovos-audio's
+        legacy ``track_start_callback(uri_or_none)`` convention."""
+        if self._track_start_callback is None:
+            return
+        if event == PlaybackEvent.TRACK_START:
+            self._track_start_callback(data.get("uri"))
+        elif event in (PlaybackEvent.END_OF_MEDIA, PlaybackEvent.STOPPED, PlaybackEvent.ERROR):
+            self._track_start_callback(None)
 
     def set_track_start_callback(self, callback_func):
-        self.mass.set_track_start_callback(callback_func)
+        self._track_start_callback = callback_func
 
     def supported_uris(self):
         return self.mass.supported_uris()
@@ -72,22 +85,21 @@ class MAssAudioService(AudioBackend):
     def seek_forward(self, seconds: float) -> None:
         """Seek forward by a relative number of seconds.
 
-        Delegates to :meth:`MAssBaseService.seek_forward`.
-
         Args:
             seconds: Number of seconds to seek forward.
         """
-        self.mass.seek_forward(seconds)
+        current_ms = self.mass.get_track_position()
+        self.mass.set_track_position(current_ms + int(seconds * 1000))
 
     def seek_backward(self, seconds: float) -> None:
         """Seek backward by a relative number of seconds.
 
-        Delegates to :meth:`MAssBaseService.seek_backward`.
-
         Args:
             seconds: Number of seconds to seek backward.
         """
-        self.mass.seek_backward(seconds)
+        current_ms = max(self.mass.get_track_position(), 0)
+        new_ms = max(current_ms - int(seconds * 1000), 0)
+        self.mass.set_track_position(new_ms)
 
 
 def load_service(base_config, bus):
