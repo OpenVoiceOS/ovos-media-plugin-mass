@@ -15,7 +15,7 @@
 import threading
 import time
 
-from ovos_plugin_manager.templates.media import MediaBackend, RemoteAudioPlayerBackend
+from ovos_plugin_manager.templates.media import MediaBackend, PlaybackEvent, RemoteAudioPlayerBackend
 from ovos_utils import create_daemon
 from ovos_utils.log import LOG
 
@@ -84,6 +84,9 @@ class MAssBaseService(MediaBackend):
         Backend for playback on a specific music assistant player
     """
 
+    can_seek = True
+    can_pause = True
+
     def __init__(self, config, bus=None):
         super().__init__(config, bus)
         self.connection_attempts = 0
@@ -91,12 +94,24 @@ class MAssBaseService(MediaBackend):
         self.config = config
 
         if self.config is None or 'url' not in self.config:
-            raise ValueError("MAss server url not set!")
+            raise ValueError(
+                "MAss server url not set! Set 'url' on this backend's config "
+                "entry (media.audio_players.<name>.url on ovos-media, "
+                "Audio.backends.<name>.url on legacy ovos-audio) - see "
+                "docs/configuration.md, or run ovos-mass-autoconfigure."
+            )
         else:
             self.url = self.config['url']
 
         if self.config is None or 'identifier' not in self.config:
-            raise ValueError("MAss identifier not set!")  # Can't connect since no id is specified
+            # Can't connect since no id is specified
+            raise ValueError(
+                "MAss identifier not set! Set 'identifier' (the target Music "
+                "Assistant player_id) on this backend's config entry "
+                "(media.audio_players.<name>.identifier on ovos-media, "
+                "Audio.backends.<name>.identifier on legacy ovos-audio) - see "
+                "docs/configuration.md, or run ovos-mass-autoconfigure."
+            )
         else:
             self.player_id = self.config['identifier']
 
@@ -104,6 +119,15 @@ class MAssBaseService(MediaBackend):
         self.tracker = PlaybackTimestampTracker()
         self.is_playing = False
         self.meta: dict = {}
+        self._loaded_uri = None
+        # last Music Assistant reported state we already reacted to, so the
+        # ping loop doesn't re-report a transition we already reported from
+        # a locally-issued play()/pause()/resume()/stop() call
+        self._last_ma_state = None
+        # set by the ping loop when it can't reach MAss while a track is
+        # playing; consumed (and cleared) by the play() watcher daemon so
+        # report_track_end reports the error instead of a natural end
+        self._pending_error = None
 
         # player availability check
         self.player_state = {"available": False}
@@ -119,10 +143,27 @@ class MAssBaseService(MediaBackend):
 
         A player that is no longer reachable/known to the server is
         reported as unavailable instead of leaving ``player_state`` as
-        ``None``.
+        ``None``. Also detects and reports playback state transitions that
+        were made from outside this plugin (e.g. someone pausing/resuming
+        the player from the Music Assistant UI directly).
         """
         state = self.api.get_player_state(self.player_id)
         self.player_state = state if state is not None else {"available": False}
+        self._report_external_transition()
+
+    def _report_external_transition(self) -> None:
+        """Report PAUSED/RESUMED when MAss's reported state changes without
+        this plugin having caused the change itself."""
+        if not self.is_playing:
+            return
+        ma_state = (self.player_state or {}).get("state")
+        if ma_state is None or ma_state == self._last_ma_state:
+            return
+        if ma_state == "paused" and self._last_ma_state != "paused":
+            self.report(PlaybackEvent.PAUSED, uri=self._loaded_uri)
+        elif ma_state == "playing" and self._last_ma_state == "paused":
+            self.report(PlaybackEvent.RESUMED, uri=self._loaded_uri)
+        self._last_ma_state = ma_state
 
     def _start_ping_loop(self) -> None:
         """Start the background thread that periodically refreshes player state.
@@ -140,10 +181,20 @@ class MAssBaseService(MediaBackend):
                     self.refresh_player_state()
                 except Exception as e:
                     LOG.warning(f"failed to refresh MAss player state: {e}")
+                    if self.is_playing:
+                        # can't reach the MAss server anymore while a track
+                        # was playing - a network/MA failure genuinely ended
+                        # it, not a natural end or a requested stop. Record
+                        # the error and flip is_playing; the watcher daemon
+                        # spawned by play() is the single site that calls
+                        # report_track_end, so it picks this up on its next
+                        # loop check instead of us reporting here too.
+                        self._pending_error = e
+                        self.is_playing = False
 
         self._ping_thread = create_daemon(_loop)
 
-    def load_track(self, uri: str, metadata: dict | None = None) -> None:
+    def load_track(self, uri: str, metadata: dict | None = None) -> bool:
         """Load a track URI and populate metadata from the MAss API.
 
         Stores enriched metadata in ``self.meta`` so that ``track_info()``
@@ -152,8 +203,16 @@ class MAssBaseService(MediaBackend):
         Args:
             uri: MAss library URI or HTTP URL for the track.
             metadata: Optional seed metadata dict; enriched in-place.
+
+        Returns:
+            bool: True if the track metadata was fetched successfully.
         """
-        track_info = self.api.track_info(uri) or {}
+        try:
+            track_info = self.api.track_info(uri) or {}
+        except Exception as e:
+            LOG.error(f"failed to load track '{uri}': {e}")
+            self.report(PlaybackEvent.ERROR, error=str(e), uri=uri)
+            return False
         koi = ['name', 'external_ids', 'duration', 'track_number', 'disc_number']
         metadata = metadata or {}
         for k in koi:
@@ -170,7 +229,8 @@ class MAssBaseService(MediaBackend):
         if metadata.get("duration"):
             self.tracker.duration = metadata["duration"]
         self.meta = metadata
-        super().load_track(uri, metadata)
+        self._loaded_uri = uri
+        return True
 
     def supported_uris(self):
         """ Return supported uris of mass. """
@@ -192,32 +252,39 @@ class MAssBaseService(MediaBackend):
     def play(self, repeat=False):
         """ Start playback."""
         self.is_playing = True
-        self.api.play_media(self.active_queue["queue_id"], self._now_playing)
+        self._last_ma_state = "playing"
+        try:
+            self.api.play_media(self.active_queue["queue_id"], self._loaded_uri)
+        except Exception as e:
+            LOG.error(f"failed to start MAss playback: {e}")
+            self.is_playing = False
+            self.report(PlaybackEvent.ERROR, error=str(e), uri=self._loaded_uri)
+            return
         self.tracker.start()
+        self.report(PlaybackEvent.TRACK_START, uri=self._loaded_uri)
 
-        # track start/end callbacks
-        if self._track_start_callback:  # optimistic, we dont have a callback from MA
-            self._track_start_callback(self._now_playing)
+        uri = self._loaded_uri
 
         if self.tracker.duration > 0:
 
             def check_ended() -> None:
-                """Daemon that reports natural end-of-media once duration is reached.
-
-                Guards against firing after an explicit ``stop()`` call by
-                checking ``self.is_playing`` before invoking the callback.
+                """Daemon that watches for the end of this track and converges
+                on the single ``report_track_end`` call site once playback is
+                no longer happening - whether that is because the tracker
+                reached the track's duration (natural end) or because
+                ``_stop()``/an external error flipped ``is_playing`` to
+                False in the meantime. ``report_track_end`` itself tells a
+                requested stop apart from a natural end.
                 """
                 while self.is_playing:
                     time.sleep(0.1)
                     if self.is_playing and self.tracker.current_timestamp >= self.tracker.duration:
-                        if self._track_start_callback:
-                            self._track_start_callback(None)
-                        # natural end-of-media (duration reached, no stop()
-                        # requested by us) - ocp_stop() is idempotent
-                        # (no-ops once self._now_playing is None), so it is
-                        # safe to call here even if a stop() races us
-                        self.ocp_stop()
+                        self.is_playing = False
                         break
+                self.tracker.stop()
+                self._last_ma_state = None
+                error, self._pending_error = self._pending_error, None
+                self.report_track_end(uri=uri, error=error)
 
             create_daemon(check_ended)
         else:
@@ -226,25 +293,34 @@ class MAssBaseService(MediaBackend):
             # fire, so we would never detect a natural end. Fall back to
             # polling the player's reported state (refreshed by the ping
             # loop into self.player_state at player_ping_interval) and treat
-            # idle/stopped - after we know playback actually started - as a
-            # natural end.
+            # idle/stopped - after we know playback actually started - as
+            # playback no longer happening, converging on the same
+            # ``report_track_end`` call site as ``check_ended`` above.
             def watch_player_state() -> None:
                 while self.is_playing:
                     time.sleep(self._ping_interval)
                     if self.is_playing and (self.player_state or {}).get("state") in ("idle", "stopped"):
-                        if self._track_start_callback:
-                            self._track_start_callback(None)
-                        self.ocp_stop()
+                        self.is_playing = False
                         break
+                self.tracker.stop()
+                self._last_ma_state = None
+                error, self._pending_error = self._pending_error, None
+                self.report_track_end(uri=uri, error=error)
 
             create_daemon(watch_player_state)
 
-    def stop(self):
-        """ Stop playback and quit app. """
+    def _stop(self) -> bool:
+        """ Stop playback and quit app.
+
+        Reports nothing itself - the watcher daemon spawned by ``play()``
+        notices ``is_playing`` went False and converges on
+        ``report_track_end`` (which reports STOPPED, since ``stop()``
+        already recorded the explicit-stop flag before calling this).
+        """
         if self.is_playing:
             self.is_playing = False
+            self._last_ma_state = "idle"
             self.api.player_command_stop(self.player_id)
-            self.tracker.stop()
             return True
         else:
             return False
@@ -253,10 +329,14 @@ class MAssBaseService(MediaBackend):
         """ Pause current playback. """
         self.api.queue_command_pause(self.active_queue["queue_id"])
         self.tracker.pause()
+        self._last_ma_state = "paused"
+        self.report(PlaybackEvent.PAUSED, uri=self._loaded_uri)
 
     def resume(self):
         self.api.queue_command_play(self.active_queue["queue_id"])
         self.tracker.resume()
+        self._last_ma_state = "playing"
+        self.report(PlaybackEvent.RESUMED, uri=self._loaded_uri)
 
     def next_track(self):
         """Skip to the next track in the Music Assistant queue."""
@@ -318,40 +398,6 @@ class MAssBaseService(MediaBackend):
                 ``disc_number``, and ``external_ids``.
         """
         return getattr(self, "meta", {})
-
-    def seek_forward(self, seconds: float) -> None:
-        """Seek forward by a relative number of seconds.
-
-        Computes the new absolute position from the current tracker timestamp,
-        clamps it to the track duration, then issues a MAss seek command and
-        updates the local tracker.
-
-        Args:
-            seconds: Number of seconds to seek forward.
-        """
-        current = max(self.tracker.current_timestamp, 0)
-        new_position = current + seconds
-        if self.tracker.duration > 0:
-            new_position = min(new_position, self.tracker.duration)
-        new_position = int(new_position)
-        self.api.player_command_seek(self.player_id, new_position)
-        self.tracker.seek(new_position)
-
-    def seek_backward(self, seconds: float) -> None:
-        """Seek backward by a relative number of seconds.
-
-        Computes the new absolute position from the current tracker timestamp,
-        clamps it to zero, then issues a MAss seek command and updates the
-        local tracker.
-
-        Args:
-            seconds: Number of seconds to seek backward.
-        """
-        current = max(self.tracker.current_timestamp, 0)
-        new_position = max(current - seconds, 0)
-        new_position = int(new_position)
-        self.api.player_command_seek(self.player_id, new_position)
-        self.tracker.seek(new_position)
 
 
 class MAssOCPAudioService(RemoteAudioPlayerBackend, MAssBaseService):

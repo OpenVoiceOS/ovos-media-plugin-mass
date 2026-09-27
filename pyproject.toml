@@ -19,7 +19,8 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
-    "ovos-plugin-manager>=2.1.0,<3.0.0",
+    # TODO: bump to >=3.0.0a1,<4.0.0 once ovos-plugin-manager 3.0.0 (media-backend-v2) ships
+    "ovos-plugin-manager>=2.11.6a1,<4.0.0",
     "ovos-config>=0.0.12,<3.0.0",
     "py-music-assistant>=0.1.0a3",
 ]
